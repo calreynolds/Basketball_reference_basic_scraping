@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import functools as fc
 import re
+import sys
 
 import warnings
 #sns.set(style="darkgrid")
@@ -65,7 +66,7 @@ thisdict = {
     'Washington Wizards': 'WAS'
 }
 
-url = "https://www.basketball-reference.com/players/l/livinsh01.html"
+url = sys.argv[1]
 html = urlopen(url)
 rookie = False
 retired = False
@@ -129,7 +130,8 @@ def return_current_year_contract(salary_info, rookie):
 
 	contract_df = pd.DataFrame(cleaned_data)
 	contract_df = contract_df[0].str.split(', ', expand=True)
-	d = {'Season': [contract_df[1][0]], 'Salary': [contract_df[1][1]]}
+	team_name = contract_df[0][1].strip('[[')
+	d = {'Season': [contract_df[1][0]], 'Salary': [contract_df[1][1]], 'Team': team_name}
 	contract_df1 = pd.DataFrame(d)
 
 	return contract_df1
@@ -149,8 +151,6 @@ def return_previous_salaries(salary_info, contract_df1, retired):
 	    clean5 = re.compile('<.*?>')
 	    clean4 = (re.sub(clean5, '',str_newcells3))
 	    cleaned_salary.append(clean4)
-
-	print("Shaun livinston's salary" + str(cleaned_salary))
 
 	salary_df = pd.DataFrame(cleaned_salary)[0].str.split(', ', expand=True)
 
@@ -230,7 +230,6 @@ def return_stats_pipeline():
 
 	rookie = False
 	retired = False
-	print("len of salary:", len(salary_info))
 	if currentYear in str(salary_info) and df_initial.shape[0] == 1:
 	    rookie = True
 	elif currentYear not in str(salary_info) or currentYear not in str(df_initial[0]):
