@@ -20,7 +20,7 @@ from bs4 import Comment
 
 
 # # This does not work currently for:
-# 
+#
 # - Rookies
 # - Retired Players
 
@@ -36,7 +36,7 @@ thisdict = {
     'Atlanta Hawks': 'ATL',
     'Brooklyn Nets': 'BRK',
     'Boston Celtics': 'BOS',
-    'Charlotte Hornets': 'CHO',
+    'Charlotte Hornets': 'CHA',
     'Chicago Bulls': 'CHI',
     'Cleveland Cavaliers': 'CLE',
     'Dallas Mavericks': 'DAL',
@@ -57,7 +57,7 @@ thisdict = {
     'Oklahoma City Thunder': 'OKC',
     'Orlando Magic': 'ORL',
     'Philadelphia 76ers': 'PHI',
-    'Phoenix Suns': 'PHO',
+    'Phoenix Suns': 'PHX',
     'Portland Trail Blazers': 'POR',
     'Sacramento Kings': 'SAC',
     'San Antonio Spurs': 'SAS',
@@ -103,14 +103,16 @@ def preprocess_data(soup):
     # This deals with null 3P% values
     df1[13] = (df1[13].str.strip()).replace('', '.000')
     df1[20] = (df1[20].str.strip()).replace('', '.000')
+    print("changed ft%", df1[20])
     return df1
 
 
 
 # --------------------------------------- Salary Info --------------------------------------- #
-# 
+#
 
 def return_current_year_contract(salary_info, rookie):
+    print("IMPORTANT", salary_info[0])
     if not rookie:
         contractsoup = BeautifulSoup(salary_info[1], 'html.parser')
     elif rookie and len(salary_info) > 1:
@@ -128,10 +130,12 @@ def return_current_year_contract(salary_info, rookie):
         clean5 = re.compile('<.*?>')
         clean4 = (re.sub(clean5, '',str_newcells3))
         cleaned_data.append(clean4)
+    print("con", cleaned_data)
 
     contract_df = pd.DataFrame(cleaned_data)
     contract_df = contract_df[0].str.split(', ', expand=True)
     team_name = contract_df[0][1].strip('[[')
+
     d = {'Season': [contract_df[1][0]], 'Salary': [contract_df[1][1]], 'Team': team_name}
     contract_df1 = pd.DataFrame(d)
     contract_df1['Salary'] = contract_df1['Salary'].str.strip(']]')
@@ -142,9 +146,12 @@ def return_current_year_contract(salary_info, rookie):
 
 def return_previous_salaries(salary_info, contract_df1, retired):
     cumulative_salaries = BeautifulSoup(salary_info[0], 'html.parser')
+    print("hi")
     cells2 = cumulative_salaries.find_all('tr')
+    print("hi")
 
     cleaned_salary = []
+    print("hi")
 
     for elem in cells2:
         newcells = elem.find_all('th')
@@ -154,24 +161,30 @@ def return_previous_salaries(salary_info, contract_df1, retired):
         clean5 = re.compile('<.*?>')
         clean4 = (re.sub(clean5, '',str_newcells3))
         cleaned_salary.append(clean4)
+    print("hi")
+
+    print("WE DEM BOYS", cleaned_salary)
 
     salary_df = pd.DataFrame(cleaned_salary)[0].str.split(', ', expand=True)
-
+    print("-----------------------------\n", salary_df)
     salary_df = salary_df.drop([2], axis=1)
     salary_df[0] = salary_df[0].str.strip('[[')
     salary_df[3] = salary_df[3].str.strip(']]')
     salary_df = salary_df.rename(columns=salary_df.iloc[0].str.strip())
     if not retired:
         salary_df = salary_df.append(contract_df1)
+    print("hi")
 
     salary_df['Salary'] = salary_df['Salary'].str.strip(']]')
     salary_df['Season'] = salary_df['Season'].str.strip(']]')
+
     salary_df = salary_df[salary_df.Salary != 'Salary']
     salary_df = salary_df[salary_df.Season != 'Career']
     salary_df = salary_df[salary_df.Season != 'Team']
     salary_df1 = salary_df.replace(regex={r'.*Minimum': 75000})
     salary_df1['Salary'] = salary_df1['Salary'].replace('[\$,]', '', regex=True)
     salary_df1['Salary'] = salary_df1['Salary'].replace('[ a-zA-Z()]*', '', regex=True).astype(float)
+    print("hi")
 
     return salary_df1
 
@@ -197,25 +210,29 @@ def combine_salary_and_stats(df1, contract_df1, salary_df, rookie, match):
     df9 = df7.apply(fc.partial(pd.to_numeric, errors='ignore'))
 
     if not rookie:
-        salary_df1 = salary_df.replace({"Team": thisdict}) 
+        salary_df1 = salary_df.replace({"Team": thisdict})
 
     #df9 = df8[~df8.Team.str.contains("TOT")]
 
     df9.Team = df9.Team.str.strip()
     if not rookie:
         salary_df1.Team = salary_df1.Team.str.strip()
+
     df9 = df9.reset_index(drop=True)
-    #print("---------------", contract_df1, "---------------")
     if rookie:
         val = df9.Team[0].strip()
-        for key, value in thisdict.items(): 
+        print("VAL", val)
+        for key, value in thisdict.items():
              if val == value:
                  contract_df1['Team'] = val
-
+    #print("ABOUT TO BE MERGED", salary_df1)
+    print("DF MERGING WITH", df9)
     if rookie:
         df = pd.merge(df9, contract_df1, right_index=True, on=['Season', 'Team'])
     else:
+        print("ASDJNASKJDNAKSNDKASNJDASKNDAKJSKDSANKJASNDKJn")
         df = pd.merge(df9, salary_df1, right_index=True, on=['Season', 'Team'])
+    print("POST MERGED", df)
 
 
     names = [match] * (df.shape[0])
@@ -223,6 +240,10 @@ def combine_salary_and_stats(df1, contract_df1, salary_df, rookie, match):
 
     return df
 
+
+def check_rookie(df):
+    a = df.to_numpy()
+    return (a[0] == a).all()
 
 def return_stats_pipeline(url):
     html = urlopen(url)
@@ -241,48 +262,51 @@ def return_stats_pipeline(url):
     for c in comments:
         if ("salary" in c.extract() or "contracts" in c.extract()) and ("onclick" not in c.extract()) and ("transaction" not in c.extract()):
             salary_info.append(c.extract())
+            print("COMMENT", c.extract())
 
+    #print("Salary LENGHT", len(salary_info))
     df_initial = preprocess_data(soup)
+    print("initial df", df_initial)
 
-    df_initial = df_initial[~df_initial[2].str.contains("TOT")]
 
     rookie = False
     retired = False
-    if (df_initial[0] == '2019-20').all() and df_initial.shape[0] <= 3:
+    print("YEARS", df_initial[0].all())
+    df_initial = df_initial[~df_initial[2].str.contains("TOT")]
+    if (df_initial[0] == '2019-20').all() and df_initial.shape[0] < 4:
         rookie = True
     elif currentYear not in str(salary_info) or currentYear not in str(df_initial[0]):
         retired = True
         salary_info = salary_info[:1]
-
+    print("ROOOKIE", rookie)
     if rookie:
         df_initial[5] = df_initial[5].astype(int)
-        if (int(df_initial[5].sum()) < 20):
+        if (df_initial[5].sum() < 20):
             return None
-
+    print("JORDAN BONDEAKSJDNKASJNDKASNKDNAKJN")
+    print(salary_info, "ASKDMLASDMLASKMDLASMLDKASMLDKAMSLDMASLKDMALSKMD")
     if not salary_info:
         return None
-
     curr_contract = None
     if rookie or not retired:
         curr_contract = return_current_year_contract(salary_info, rookie)
+    print("curr contract")
+    print(curr_contract)
 
     previous_salaries = None
     if not rookie:
         previous_salaries = return_previous_salaries(salary_info, curr_contract, retired)
-
+    print("curr contract")
+    print(curr_contract)
+    print("previous salaries", previous_salaries)
     polished_stats = combine_salary_and_stats(df_initial, curr_contract, previous_salaries, rookie, match)
-    
-    invalid_years = ['1998-99', '1999-00', '2000-01','2001-02','2002-03', '2003-04','2004-05','2005-06', '2006-07']
-    for year in invalid_years:
-        polished_stats = polished_stats[polished_stats.Season != year]
-    
     return polished_stats
 
-"""
+
 def main():
-    polished_stats = return_stats_pipeline("https://www.basketball-reference.com/players/c/cartevi01.html")
+    polished_stats = return_stats_pipeline("https://www.basketball-reference.com/players/w/willizi01.html")
     print(polished_stats)
 
 
 main()
-"""
+
