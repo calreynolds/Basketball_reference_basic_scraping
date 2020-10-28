@@ -33,11 +33,10 @@ def get_all_links():
         wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
         wr.writecol(player_hrefs)
    
-"""     
+
 def main():
     for letter in alphabet:
         extract_player_links_from_url(base_URL + letter)
     print(player_hrefs)
 
 main()
-"""

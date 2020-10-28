@@ -66,25 +66,17 @@ thisdict = {
     'Washington Wizards': 'WAS'
 }
 
-#url = sys.argv[1]
-
-
-#soup = BeautifulSoup(html, 'html.parser')
-
 labels = [['Season', 'Age', 'Team', 'League', 'Position', 'GP', 'GS', 'MP', 'FG', 'FGA', 'FG%', '3P', '3PA', '3P%', '2P', '2PA', '2P%', 'eFG%', 'FT', 'FTA', 'FT%', 'ORB', 'DRB', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS', 'Name']]
 labels_df = pd.DataFrame(labels)
 
 global title
 global soup
-global match
-match = ""
 
 
 def preprocess_data(soup):
     webpage_links = soup.find_all('tr', {'id': re.compile(r'per.game.*')})
 
     list_rows = []
-    labels = []
     for row in webpage_links:
         cells = row.find_all('td')
         years = row.find('a')
@@ -95,17 +87,13 @@ def preprocess_data(soup):
         clean3 = (re.sub(clean, '',str_years))
         list_rows.append([clean3 +"," + clean2])
 
-
     df = pd.DataFrame(list_rows)
-
 
     df1 = df[0].str.split(',', expand=True)
     # This deals with null 3P% values
     df1[13] = (df1[13].str.strip()).replace('', '.000')
     df1[20] = (df1[20].str.strip()).replace('', '.000')
     return df1
-
-
 
 # --------------------------------------- Salary Info --------------------------------------- #
 # 
@@ -118,6 +106,7 @@ def return_current_year_contract(salary_info, rookie):
     else:
         contractsoup = BeautifulSoup(salary_info[0], 'html.parser')
     # ------------- current contract ------------- #
+
     rows = contractsoup.find_all('tr')
     cleaned_data = []
     for elem in rows:
@@ -281,8 +270,7 @@ def return_stats_pipeline(url):
 """
 def main():
     polished_stats = return_stats_pipeline("https://www.basketball-reference.com/players/c/cartevi01.html")
-    print(polished_stats)
-
+    print(polished_stats.head['Age'])
 
 main()
 """
