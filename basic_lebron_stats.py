@@ -223,13 +223,18 @@ def return_stats_pipeline(url):
 
 
     title = str(soup.title)[7:]
-    match = re.match(r'.* S', title).group(0)
-    match = match[:-2]
+    print("title", title)
+    match = re.match(r'.* Stats', title).group(0)
+    match = match[:-6]
+    print("match", match)
 
     salary_info = []
     for c in comments:
         if ("salary" in c.extract() or "contracts" in c.extract()) and ("onclick" not in c.extract()) and ("transaction" not in c.extract()):
+            print("c.extract salary:", c.extract())
             salary_info.append(c.extract())
+
+    print("SALARY INFO:", salary_info)
 
     df_initial = preprocess_data(soup)
 
@@ -258,10 +263,11 @@ def return_stats_pipeline(url):
     previous_salaries = None
     if not rookie:
         previous_salaries = return_previous_salaries(salary_info, curr_contract, retired)
+        print("PREVIOUS SALARIES", previous_salaries)
 
     polished_stats = combine_salary_and_stats(df_initial, curr_contract, previous_salaries, rookie, match)
     
-    invalid_years = ['1998-99', '1999-00', '2000-01','2001-02','2002-03', '2003-04','2004-05','2005-06', '2006-07']
+    invalid_years = ['1998-99', '1999-00', '2000-01', '2001-02', '2002-03', '2003-04', '2004-05', '2005-06', '2006-07']
     for year in invalid_years:
         polished_stats = polished_stats[polished_stats.Season != year]
     
@@ -269,8 +275,8 @@ def return_stats_pipeline(url):
 
 """
 def main():
-    polished_stats = return_stats_pipeline("https://www.basketball-reference.com/players/c/cartevi01.html")
-    print(polished_stats.head['Age'])
+    polished_stats = return_stats_pipeline("https://www.basketball-reference.com/players/y/youngth01.html")
+    print(polished_stats)
 
 main()
 """
